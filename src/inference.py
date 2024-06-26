@@ -27,8 +27,10 @@ def transcribe_audio(audio_data: bytes) -> str:
 
     try:
         # Transcribe the audio file by passing the file path
-        transcription = model.transcribe([temp_audio_path])[0]
-        return transcription
+
+        with torch.no_grad():
+            transcription = model.transcribe([temp_audio_path])[0]
+            return transcription
     finally:
         # Clean up the temporary file
         os.unlink(temp_audio_path)
