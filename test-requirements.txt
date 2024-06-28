@@ -1,0 +1,11 @@
+pytest
+pytest-anyio
+pytest-mock
+#pytest-typeguard
+pytest-hydra-core
+pytest-shard
+pytest-flakefinder
+pytest-xdist
+pytest-rerunfailures
+pytest-xdoctest
+pytest-hypothesis
