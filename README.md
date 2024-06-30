@@ -3,7 +3,7 @@
 This project aims to address the gap between transcription technology at the bleeding edge and usable, performant implementations of these technologies. 
 
 ## Usage
-Currently, your best bet is to clone the repo on a machine with Nvidia drivers and Doxker. Use Docker to build and start the container. You will need considrable (50+ GB) space to build the image due to Nvidia tooling. Docker will start a local server on the instance that responds to POST requests with your file. 
+Currently, your best bet is to clone the repo on a machine with Nvidia drivers and Docker. Use Docker to build and start the container. You will need considrable (50+ GB) space to build the image due to Nvidia tooling. Docker will start a local server on the instance that responds to POST requests with your file. 
 
 ## Benchmarks
 All evals done on LibriSpeech test-clean
@@ -19,11 +19,13 @@ Files Processed: 2620
 Overall RTF: 0.0168 
 Overall WER: 0.0204
 
-Overall RTF: 0.0168 * $.526 /hour (g4dn.xlarge) = .0088
+Overall RTF: 0.0168 * $.526 /hour (g4dn.xlarge) = $.0088 /hour!
+*granted, this assumes 100% utilization 
 ### To Do
 - Explain project
 - Cost analysis of existing transcription services
 - Optimize data loading
+    - check if eval data exists, download otherwise
 - Web-reachable server
 - Optimize model for inference
     - tensorRT conversion

@@ -16,6 +16,20 @@ services:
               count: 1
               capabilities: [gpu]
 
+  eval:
+    build:
+      context: .
+      target: eval
+    volumes:
+      - .:/app
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
   test:
     build:
       context: .
