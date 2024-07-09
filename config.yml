@@ -1,6 +1,7 @@
 model:
   name: "nvidia/parakeet-ctc-0.6b"
   sample_rate: 16000
+  decoding_strategy: "greedy_batch"
 
 server:
   host: "0.0.0.0"

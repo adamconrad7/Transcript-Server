@@ -1,146 +1,69 @@
-import nemo.collections.asr as nemo_asr
 import torch
 import torchaudio
+import time
+import json
+import numpy as np
+from tqdm import tqdm
+from src.model import model
+from src.config import config
 
-class ParakeetBenchmark:
-    def __init__(self, model_name="nvidia/parakeet-ctc-0.6b"):
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        print(f"Using device: {self.device}")
-        
-        print(f"Loading model: {model_name}")
-        self.model = nemo_asr.models.ASRModel.from_pretrained(model_name).to(self.device)
-        self.model.eval()
-        print("Model loaded successfully")
+def generate_random_audio(duration_seconds, sample_rate=16000):
+    """Generate random noise audio."""
+    num_samples = int(duration_seconds * sample_rate)
+    return torch.randn(1, num_samples)
 
-    def generate_audio(self, duration):
-        sample_rate = 16000
-        t = torch.linspace(0, duration, int(duration * sample_rate))
-        audio = torch.sin(2 * torch.pi * 440 * t).unsqueeze(0)  # 440 Hz sine wave
-        return audio.to(self.device), sample_rate
+def run_benchmark(num_files, duration_seconds, configs):
+    results = []
+    for cfg in tqdm(configs, desc="Testing configurations"):
+        model.change_attention_model("rel_pos_local_attn", [cfg['attn_context'], cfg['attn_context']])
+        model.change_subsampling_conv_chunking_factor(cfg['subsampling_factor'])
 
-    def preprocess_audio(self, audio, sample_rate):
-        if sample_rate != 16000:
-            resampler = torchaudio.transforms.Resample(sample_rate, 16000).to(self.device)
-            audio = resampler(audio)
-        return audio
+        total_time = 0
+        total_audio_length = num_files * duration_seconds
 
-    def run_inference(self, audio):
-        with torch.no_grad():
-            logprobs, logprobs_len = self.model.forward(input_signal=audio, input_signal_length=torch.tensor([audio.shape[1]]).to(self.device))
-            return self.model.decoding.ctc_decoder_predictions_tensor(logprobs)[0]
+        for _ in range(num_files):
+            audio = generate_random_audio(duration_seconds)
 
-    def measure_performance(self, duration):
-        audio, sample_rate = self.generate_audio(duration)
-        audio = self.preprocess_audio(audio, sample_rate)
+            start_time = time.time()
+            with torch.no_grad():
+                _ = model.transcribe([audio.numpy().squeeze()], batch_size=cfg['batch_size'])
+            end_time = time.time()
 
-        start_time = time.time()
-        start_mem = torch.cuda.memory_allocated()
+            total_time += end_time - start_time
 
-        transcription = self.run_inference(audio)
+        rtf = total_time / total_audio_length
+        gpu_mem_used = torch.cuda.max_memory_allocated() / (1024 ** 3)  # Convert to GB
+        results.append({**cfg, 'rtf': rtf, 'total_time': total_time, 'gpu_mem_used': gpu_mem_used})
 
-        end_time = time.time()
-        end_mem = torch.cuda.memory_allocated()
+        # Reset GPU memory statistics for the next configuration
+        torch.cuda.reset_peak_memory_stats()
 
-        processing_time = end_time - start_time
-        peak_memory = torch.cuda.max_memory_allocated() - start_mem
-        rtf = processing_time / duration
+    return results
 
-        return {
-            "duration": duration,
-            "processing_time": processing_time,
-            "rtf": rtf,
-            "peak_memory": peak_memory,
-            "transcription_length": len(transcription)
-        }
-
-    def run_benchmark(self, durations):
-        results = []
-        for duration in durations:
-            try:
-                result = self.measure_performance(duration)
-                results.append(result)
-                print(f"Processed {duration}s audio: RTF={result['rtf']:.4f}, Peak Memory={result['peak_memory']/1e6:.2f}MB")
-            except RuntimeError as e:
-                print(f"Error processing {duration}s audio: {str(e)}")
-                break
-        return results
-
-# Usage
 if __name__ == "__main__":
-    benchmark = ParakeetBenchmark()
-    durations = [60, 300, 600, 900, 1200, 1500, 1800]  # 1 min to 30 mins
-    results = benchmark.run_benchmark(durations)
-    # Add code here to log or print the results as needed
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    num_files = 5  # Number of random audio files to generate for each config
+    duration_seconds = 300  # Duration of each audio file (5 minutes)
+    
+    configs = [
+        {'attn_context': 128, 'subsampling_factor': 1, 'batch_size': 1},
+        {'attn_context': 256, 'subsampling_factor': 1, 'batch_size': 1},
+        {'attn_context': 128, 'subsampling_factor': 2, 'batch_size': 1},
+        {'attn_context': 256, 'subsampling_factor': 2, 'batch_size': 1},
+        {'attn_context': 128, 'subsampling_factor': 1, 'batch_size': 2},
+        {'attn_context': 256, 'subsampling_factor': 1, 'batch_size': 2},
+    ]
+
+    results = run_benchmark(num_files, duration_seconds, configs)
+    
+    # Save results
+    with open('benchmark_results.json', 'w') as f:
+        json.dump(results, f, indent=2)
+
+    # Print best configuration
+    best_config = min(results, key=lambda x: x['rtf'])
+    print(f"Best configuration: {best_config}")
+
+    # Print all results sorted by RTF
+    print("\nAll configurations sorted by RTF:")
+    for cfg in sorted(results, key=lambda x: x['rtf']):
+        print(f"RTF: {cfg['rtf']:.4f}, GPU Memory: {cfg['gpu_mem_used']:.2f} GB, Config: {cfg}")

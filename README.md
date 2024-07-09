@@ -33,3 +33,6 @@ Overall RTF: 0.0168 * $.526 /hour (g4dn.xlarge) = $.0088 /hour!
 - Automate provisioning
 - Check for local model instead of Dl
 
+## License
+
+This project is licensed under the GNU Affero General Public License v3.0. See the [LICENSE](LICENSE) file for details.
