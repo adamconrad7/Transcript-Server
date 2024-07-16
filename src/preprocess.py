@@ -27,7 +27,7 @@ def convert(audio_bytes):
     buffer = io.BytesIO()
     audio.export(buffer, format="wav")
     
-    return buffer.getvalue()
+    return buffer.getvalue(), len(audio)/ 1000.0
 
 #if __name__ == "__main__":
 #    main()
