@@ -119,5 +119,5 @@ if __name__ == '__main__':
     print(f"Real-time factor: {benchmark_results['rtf']:.4f}")
     
     # Save detailed results to a file
-    with open('benchmark_results.json', 'w') as f:
-        json.dump(benchmark_results, f, indent=2)
+#    with open('benchmark_results.json', 'w') as f:
+#        json.dump(benchmark_results, f, indent=2)
