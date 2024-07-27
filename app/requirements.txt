@@ -1,0 +1,5 @@
+fastapi
+torchaudio
+torchvision
+GPUtil
+aioredis

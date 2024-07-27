@@ -22,6 +22,9 @@ Overall WER: 0.0204
 Overall RTF: 0.0168 * $.526 /hour (g4dn.xlarge) = $.0088 /hour!
 *granted, this assumes 100% utilization 
 ### To Do
+
+- Worker status updates
+- optimize small file loading
 - Explain project
 - Cost analysis of existing transcription services
 - Optimize data loading
