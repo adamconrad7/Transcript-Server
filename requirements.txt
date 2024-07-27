@@ -1,4 +1,0 @@
-fastapi
-torchaudio
-torchvision
-GPUtil
